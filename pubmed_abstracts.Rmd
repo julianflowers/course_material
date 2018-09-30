@@ -1,0 +1,161 @@
+---
+title: "Untitled"
+output: github_document
+---
+
+```{r setup}
+
+knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+
+# Searching and analysing medical literature with R
+
+We have developed a workflow in R to extract abstracts from Pubmed and apply natural language processing techniques to rapidly extract relevant information and analysis.
+
+To assist this we can use the `pubmedAbstractR` function from the `myScrapers` package. This searches pubmed and allows the user to download abstracts directly into R. It is based on the `RISmed` package. It takes a number of arguments:
+
+* *search* - a search term which can be simple or complex (see below)
+* *start* - a start data (or year) to begin the search
+* *end* - an end data (or year) to complete the search
+* *n* - number of abstracts to be downloaded - by default the first 1000 are downloaded
+* *keyword* - if set to TRUE will download keywords
+* *authors* - if set to TRUE will download authors and author order
+
+## Getting started
+
+For this exercise we need to install the `myScrapers` package as follows:
+
+```{r install, eval=FALSE}
+
+devtools::install_github("julianflowers/myScrapers")
+
+
+```
+
+
+## Example 
+
+### Non-specific searching
+
+Let us say we want to search for *machine learning in public health*. We can pass this as a search term to `pubmedAbstractR` as follows. Let's set n = 1 to being with.
+
+```{r search-1, message=FALSE, warning=FALSE}
+
+library(myScrapers)
+library(tidyverse)
+
+search <- "machine learning public health"
+start <- 2008
+end <- 2018
+n <- 1
+  
+  
+abstracts <- pubmedAbstractR(search = search, start = start, end = end, n = 1)
+
+
+
+```
+
+We can see this gives a non-specific search which would return 8720 abstracts.
+
+### Specific searching
+
+We can make the search more specific to include only those abstracts which have Medical Subject Headings (MeSH) keywords for 'machine learning' and 'public health'.
+
+```{r search-2, message=FALSE, warning=FALSE}
+
+library(myScrapers)
+
+search <- "machine learning[MeSH] and public health[MeSH]"
+start <- 2008
+end <- 2018
+n <- 1
+  
+  
+abstracts <- pubmedAbstractR(search = search, start = start, end = end, n = 1)
+
+```
+
+Lets download the most recent 500 with associated keywords and authors.
+
+```{r search-3, message=FALSE, warning=FALSE, cache=TRUE}
+
+library(myScrapers)
+
+search <- "machine learning[MeSH] and public health[MeSH]"
+start <- 2008
+end <- 2018
+n <- 500
+  
+  
+abstracts <- pubmedAbstractR(search = search, start = start, end = end, n = n, authors = TRUE, keyword = TRUE)
+
+head(abstracts, 20)
+
+```
+
+
+## Simple analysis
+
+### Abstracts per year
+
+We can undertake simple analysis such as the frequency of abstracts over time - see #Figure 4.1 which shows that the frequency of apparent relevant articles has grown in the last 3-4 years.
+
+```{r abs-freq-chart, fig.cap= "Abstract frequency per year"}
+
+abstracts %>%
+  group_by(year) %>%
+  count() %>%
+  #spread(year, n, fill = 0) %>%
+  ggplot(aes(year, n)) +
+  geom_col(fill = "red") +
+  labs(title = "Abstract frequency: ", 
+       subtitle =  search) +
+  theme(plot.subtitle = element_text(size = rel(.7)))
+
+
+```
+
+## Wordcloud
+
+A simple way of visualising the abstracts is to *tokenise* them into 1, 2 and 3 ngrams and then plot occurrence frequency as a wordcloud. We can easily do this with the `quanteda` pacakge.
+
+```{r wordcloud, fig.cap="Wordcloud of 6820 abstracts"}
+
+library(quanteda)
+
+abstracts$abstract <- tm::removeWords(abstracts$abstract, stopwords("english"))
+
+abs_corpus <- corpus(abstracts$abstract)
+abs_dfm <- dfm(abs_corpus, remove = stopwords("en"), ngrams = 1:3, remove_punct = TRUE)
+
+textplot_wordcloud(abs_dfm )
+
+
+```
+
+This confirms support vector machines (SVM) as a widely used algorithm and classification and prediction as a common application. It is hard to discern any common public health themes  - most of the terms seem to relate to methods.
+
+We can explore further using *dictionary* and *topic modelling* methods. The former allows us to search for terms across the documents using a pre-determined dictionary. The latter is an unsupervised machine learning or clustering technique which allows us to look for common groupings or themes (aka topics across all the documents).
+
+### Dictionary searching of abstracts
+
+We can create a list of terms of interest and use the to find which abstracts they occur in and how often.
+
+
+```{r dictionary search}
+
+abs_dict <- dictionary(list(ai = c("artificial intelligence", "ai"), 
+                            obesity = "obes*", 
+                            tobacco = c("smok*", "tobacco", "cigar*"), 
+                            heart_disease = c("heart", "cardi*"), 
+                            diabetes = "diabet*", 
+                            cancer = "cancer*" 
+                            ))
+  
+lookup <- dfm_lookup(abs_dfm, dictionary = abs_dict)
+
+```
+
