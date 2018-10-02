@@ -3,9 +3,7 @@ title: "Definitions"
 author: "Julian Flowers"
 date: "02/10/2018"
 output: 
-   html_document:
-     always_allow_html: yes
-   
+   html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -27,11 +25,11 @@ defs <- readtext("http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.1
 
 def_sents <- defs %>%
   unnest_tokens(sentences, text, token = "sentences") 
+
 def_sents %>% 
   .[494:516, 2] %>%
-  knitr::kable(format = "html") %>%
-  kableExtra::kable_styling()
-
+  data.frame() %>%
+  flextable::flextable(cwidth = 16, cheight = 1)
 
 ```
 
