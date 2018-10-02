@@ -12,6 +12,7 @@ Julian Flowers
       - Data used to give more precise descriptions of populations and
         individuals
       - Application of new techniques and methods
+      - Speed, accuracy and scale
       - “improving the ability to prevent disease, promote health, and
         reduce health disparities in populations by applying emerging
         methods and technologies for measuring disease, pathogens,
@@ -38,18 +39,11 @@ health:
 
 ![Source:(Dolley 2018)](fpubh-06-00068-t001.jpg)
 
-``` r
-pdfs <- list.files(pattern = "pdf")
-tables <- readtext(pdfs[1])
-
-head(tables$text) %>%
-  str_split(., "\\n") %>% data.frame() %>%
-  filter(str_detect(., "table"))
-```
-
 These are largely in environmental health and communicable disease
 control. The only studies identified by Dolley in non-communicable
 disease or broader public health relate to diabetes.
+
+![Source:(Dolley 2018)](fpubh-06-00068-t002.jpg)
 
 ## Precision ph vs precision medicine
 
@@ -65,35 +59,15 @@ strands:
     increase inequality, and will divert resources and focus away from
     population health and prevention
 
-## Critiques and controveries
+## Critiques and controversies
 
 ## Implications for health intelligence
 
 In some ways these ideas are nothing new - our users and stakeholders
 continually want more granularity and timeliness, more comprehensive
 data and insight, and actionable data linked to intervention. We have
-initiatives like population segmentation
-
-``` r
-summary(cars)
-```
-
-    ##      speed           dist       
-    ##  Min.   : 4.0   Min.   :  2.00  
-    ##  1st Qu.:12.0   1st Qu.: 26.00  
-    ##  Median :15.0   Median : 36.00  
-    ##  Mean   :15.4   Mean   : 42.98  
-    ##  3rd Qu.:19.0   3rd Qu.: 56.00  
-    ##  Max.   :25.0   Max.   :120.00
-
-## Including Plots
-
-You can also embed plots, for example:
-
-![](precision_ph_files/figure-gfm/pressure-1.png)<!-- -->
-
-Note that the `echo = FALSE` parameter was added to the code chunk to
-prevent printing of the R code that generated the plot.
+anlytical techniques like population segmentation, risk profiling and
+geodemographics.
 
 <div id="refs" class="references">
 

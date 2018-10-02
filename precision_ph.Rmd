@@ -23,6 +23,7 @@ p_load(myScrapers, readtext, tidytext, tabulizer, tidyverse )
     + Use of *big data* and new tehcnology to improve health
     + Data used to give more precise descriptions of populations and individuals
     + Application of new techniques and methods
+    + Speed, accuracy and scale
     + “improving the ability to prevent disease, promote health, and reduce health disparities in populations by applying emerging methods and technologies for measuring disease, pathogens, exposures, behaviors, and susceptibility in populations; and developing policies and targeted implementation programs to improve health” [@Khoury2016a]
     + “requires robust primary surveillance data, rapid application of sophisticated analytics to track the geographical distribution of disease, and the capacity to act on such information”[Dowell2016]
     + “Precision public health is characterized by discovering, validating, and optimizing care strategies for well-characterized population strata”[@Arnett2016]
@@ -38,18 +39,12 @@ Current literature has identified 4 main use cases for precision public health:
 
 ![Source:[@Dolley2018]](fpubh-06-00068-t001.jpg)
 
-```{r, eval=FALSE}
-
-pdfs <- list.files(pattern = "pdf")
-tables <- readtext(pdfs[1])
-
-head(tables$text) %>%
-  str_split(., "\\n") %>% data.frame() %>%
-  filter(str_detect(., "table"))
-
-```
 
 These are largely in environmental health and communicable disease control. The only studies identified by Dolley in non-communicable disease or broader public health relate to diabetes.
+
+
+![Source:[@Dolley2018]](fpubh-06-00068-t002.jpg)
+
 
 ## Precision ph vs precision medicine
 
@@ -59,24 +54,13 @@ There has been some debate about the relationship or otherwise between precision
 2. Some argue that the two are unconnected 
 3. Some argue that the precision medicine is the antihesis of precision medicine and that precision medicine may not improve health and may increase inequality, and will divert resources and focus away from population health and prevention
 
-## Critiques and controveries
+## Critiques and controversies
 
 
 
 ## Implications for health intelligence
 
-In some ways these ideas are nothing new - our users and stakeholders continually want more granularity and timeliness, more comprehensive data and insight, and actionable data linked to intervention. We have initiatives like population segmentation
+In some ways these ideas are nothing new - our users and stakeholders continually want more granularity and timeliness, more comprehensive data and insight, and actionable data linked to intervention. We have anlytical techniques  like population segmentation, risk profiling and geodemographics.
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
