@@ -1,0 +1,65 @@
+---
+title: "Definitions"
+author: "Julian Flowers"
+date: "02/10/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rvest)
+library(myScrapers)
+library(readtext)
+library(tidytext)
+
+```
+
+#### National Institute of Standards and Technology. NIST Big Data Interoperability Framework: Volume 1, Definitions (NIST Special Publication 1500-1). (2015). Available from: http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.1500-1.pdf
+
+Some big data and data science terms and definitions from the NIST Big Data definition manual.
+
+```{r}
+
+defs <- readtext("http://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.1500-1.pdf")
+
+def_sents <- defs %>%
+  unnest_tokens(sentences, text, token = "sentences") 
+def_sents %>% 
+  .[494:516, 2] %>%
+  knitr::kable() %>%
+  kableExtra::kable_styling()
+
+
+```
+
+* `r def_sents[494, 2]`
+* `r def_sents[495, 2]`
+* `r def_sents[496, 2]`
+* `r def_sents[497, 2]`
+* `r def_sents[498, 2]`
+* `r def_sents[499, 2]`
+* `r def_sents[500, 2]`
+* `r def_sents[501, 2]`
+* `r def_sents[502, 2]`
+* `r def_sents[503, 2]`
+* `r def_sents[505, 2]`
+* `r def_sents[506, 2]`
+* `r def_sents[507, 2]`
+* `r def_sents[508, 2]`
+* `r def_sents[509, 2]`
+* `r def_sents[510, 2]`
+* `r def_sents[511, 2]`
+* `r def_sents[512, 2]`
+* `r def_sents[513, 2]`
+* `r def_sents[514, 2]`
+* `r def_sents[515, 2]`
+* `r def_sents[516, 2]`
+* `r def_sents[517, 2]`
+
+
+
+
+
+
+
+

@@ -129,7 +129,7 @@ library(quanteda)
 abstracts$abstract <- tm::removeWords(abstracts$abstract, stopwords("english"))
 
 abs_corpus <- corpus(abstracts$abstract)
-abs_dfm <- dfm(abs_corpus, remove = stopwords("en"), ngrams = 1:3, remove_punct = TRUE)
+abs_dfm <- dfm(abs_corpus, remove = stopwords("en"), ngrams = 1:2, remove_punct = TRUE)
 
 textplot_wordcloud(abs_dfm )
 
