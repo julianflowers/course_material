@@ -3,7 +3,7 @@ title: "Definitions"
 author: "Julian Flowers"
 date: "02/10/2018"
 output: 
-   html_document
+   github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -28,8 +28,7 @@ def_sents <- defs %>%
 
 def_sents %>% 
   .[494:516, 2] %>%
-  data.frame() %>%
-  flextable::flextable(cwidth = 16, cheight = 1)
+  data.frame() 
 
 ```
 
