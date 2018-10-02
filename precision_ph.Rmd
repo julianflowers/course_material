@@ -2,7 +2,9 @@
 title: "Precision public health"
 author: "Julian Flowers"
 date: "02/10/2018"
-output: github_document
+output: 
+    github_document:
+      toc: yes
 bibliography: precision-ph.bib
 ---
 
@@ -61,6 +63,24 @@ There has been some debate about the relationship or otherwise between precision
 ## Implications for health intelligence
 
 In some ways these ideas are nothing new - our users and stakeholders continually want more granularity and timeliness, more comprehensive data and insight, and actionable data linked to intervention. We have anlytical techniques  like population segmentation, risk profiling and geodemographics.
+
+### Reference list for "precision public health"
+
+```{r}
+
+source("../phds-article/trip_search.R")
+
+prec_ph <- trip_searchR("precision+public+health")
+
+trip_prec <- prec_ph %>% slice(1:20) %>% select(title, link, date)
+
+
+```
+
+`r trip_prec %>% knitr::kable()`
+
+
+## References
 
 
 
