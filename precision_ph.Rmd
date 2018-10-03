@@ -1,15 +1,15 @@
 ---
-title: "Precision public health"
+title: "Precision public health: imprecise thoughts"
 author: "Julian Flowers"
 date: "02/10/2018"
 output: 
-    github_document:
-      toc: yes
+  github_document: 
+    toc: yes
 bibliography: precision-ph.bib
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 
 library(pacman)
 p_load(myScrapers, readtext, tidytext, tabulizer, tidyverse )
@@ -19,16 +19,17 @@ p_load(myScrapers, readtext, tidytext, tabulizer, tidyverse )
 
 ## What is precision public health?
 
-* A recently coined term first appearing in print in 2014[@Dolley2018]
+* A recently coined term first appearing in print in 2014 [@Dolley2018]
 * Sparse literature
 * Various definitions but all encompass a set of consistent ideas:
     + Use of *big data* and new tehcnology to improve health
     + Data used to give more precise descriptions of populations and individuals
     + Application of new techniques and methods
     + Speed, accuracy and scale
-    + “improving the ability to prevent disease, promote health, and reduce health disparities in populations by applying emerging methods and technologies for measuring disease, pathogens, exposures, behaviors, and susceptibility in populations; and developing policies and targeted implementation programs to improve health” [@Khoury2016a]
-    + “requires robust primary surveillance data, rapid application of sophisticated analytics to track the geographical distribution of disease, and the capacity to act on such information”[Dowell2016]
-    + “Precision public health is characterized by discovering, validating, and optimizing care strategies for well-characterized population strata”[@Arnett2016]
+    + “the application and combination of new and existing technologies, which more precisely describe and analyse individuals and their environment over the life course, to tailor preventive interventions for at-risk groups and improve the overall health of the population.” [@Weeramanthri2018]
+    + “improving the ability to prevent disease, promote health, and reduce health disparities in populations by applying emerging methods and technologies for measuring disease, pathogens, exposures, behaviors, and susceptibility in populations; and developing policies and targeted implementation programs to improve health”  [@Khoury2016a]
+    + “requires robust primary surveillance data, rapid application of sophisticated analytics to track the geographical distribution of disease, and the capacity to act on such information” [@Dowell2016]
+    + “Precision public health is characterized by discovering, validating, and optimizing care strategies for well-characterized population strata” [@Arnett2016]
 
 ## Current and possible uses
 
@@ -48,23 +49,59 @@ These are largely in environmental health and communicable disease control. The 
 ![Source:[@Dolley2018]](fpubh-06-00068-t002.jpg)
 
 
+Examples developing of:
+
+* Synthesizing data, academic literature and expert opinion for priority setting (https://www.frontiersin.org/articles/10.3389/fpubh.2017.00125/full)
+* Combining big and "smaller" data (https://www.frontiersin.org/articles/10.3389/fpubh.2016.00248/full)
+
+
 ## Precision ph vs precision medicine
 
 There has been some debate about the relationship or otherwise between precision medicince and precision public health. There are number of strands:
 
-1. The 4 Ps of precision medicine (....) should be extended to 5 with the addition of P for "population"... 
+1. The 4 Ps of precision medicine (Predictive, Preventive, Personalised, Particpatory) should be extended to 5 with the addition of P for "population"... 
 2. Some argue that the two are unconnected 
-3. Some argue that the precision medicine is the antihesis of precision medicine and that precision medicine may not improve health and may increase inequality, and will divert resources and focus away from population health and prevention
+3. Some argue that the precision medicine is the antithesis of public health and that precision medicine may increase inequality, and divert resources and focus away from population health and prevention
+4. Many agree that the distinction is unhelpful and that they are two sides of the same coin.
 
 ## Critiques and controversies
 
+```{r}
+
+pph1 <- get_page_text("http://www.phgfoundation.org/blog/personalised-prevention-and-public-health-an-urgent-agenda")
+
+pph1[7:10] %>%
+  str_replace_all(., "\\r", " ") %>%
+  str_replace_all(., "\\n", " ")
+
+
+```
+
+>`r pph1[7:10] %>% str_replace_all(., "\\r", " ") %>% str_replace_all(., "\\n", " ")`
 
 
 ## Implications for health intelligence
 
 In some ways these ideas are nothing new - our users and stakeholders continually want more granularity and timeliness, more comprehensive data and insight, and actionable data linked to intervention. We have anlytical techniques  like population segmentation, risk profiling and geodemographics.
 
-### Reference list for "precision public health"
+Modernisation of surveillance, epidemiology, information systems and targeted interventions with population health prespective.
+
+Precision and precision PH implies:
+
+* More granular data - build up from smallest analytical unit by default (e.g. SOA for populations,  GP for clinical populations). 
+* More timely data - latest available data by default
+* More granular time data - smallest feasible time unit (e.g. day, week or month)
+* Incorporating big and small data
+* Balanced against issues of information and data governance (re-identification risk)
+* Large scale ecological linkage (e.g. large datasets of small area data - phenomics)
+* Cohort development - requires linkage e.g. people with specific conditions
+* Better measures of disease frequency  - incidence for prevention, prevalence for burden and planning => data linkage
+* Improved risk factor estimation and surveillance
+* Combining multiple datasets - "n-tangulation"
+* Application of new techniques - timeseries/ forcasting, predictive models and machine learning (unsupervised and supervised)
+* Complexity/ network analysis
+
+### Reading list for "precision public health"
 
 ```{r}
 
@@ -79,6 +116,26 @@ trip_prec <- prec_ph %>% slice(1:20) %>% select(title, link, date)
 
 `r trip_prec %>% knitr::kable()`
 
+```{r}
+
+prec_ph1 <- pubmedAbstractR("precision AND public health [MeSH]", start = 2015, end = 2018, n = 12145)
+
+p <- prec_ph1 %>%
+  filter(str_detect(title, "[Pp]recision [Pp]ublic"))
+
+```
+
+'r p %>% knitr::kable()`
+
+
+```{r}
+
+prec_ph2 <- googlesearchR("precision public health", n = 10) %>%.[5:14]
+
+
+```
+
+`r prec_ph2`
 
 ## References
 
