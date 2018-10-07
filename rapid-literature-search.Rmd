@@ -16,7 +16,9 @@ output:
 knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE )
 ```
  
-Searching and critical appraising the literature is an essential skill for public health practitioners.
+Searching and critical appraising the literature is an essential skill for public health practitioners. Traditionally, this involves manual searching medical or bibliographic databases or sources of grey literature, identifying relevant abstracts or full text articles, reading and appraising retrieved papers and iterating through reference lists. If you are fortunate you might have access to a librarian or information specialist who can help with searching and retrieving publications. It can be a protracted manual process, and take many months.
+
+With the development of APIs for bibliographic databases and R packages to read them it ha become possible to automate searching and literatre extraction, and with mainstreamed artificial intelligence tools form natural langauge processing (NLP) it has become possible to rapidly assess large bodies of 
 
 
 
