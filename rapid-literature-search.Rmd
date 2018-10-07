@@ -1,0 +1,20 @@
+---
+title: "Rapid literature searching"
+description: |
+  Using R to rapidly search the literature 
+author:
+  - name: Julian Flowers 
+    affiliation: Public Health England
+    affiliation_url: https://www.gov.uk/phe
+date: "`r Sys.Date()`"
+output: radix::radix_article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE )
+```
+ 
+Searching and critical appraising the literature is an essential skill for public health practitioners.
+
+
+
