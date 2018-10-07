@@ -18,7 +18,66 @@ knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FAL
  
 Searching and critical appraising the literature is an essential skill for public health practitioners. Traditionally, this involves manual searching medical or bibliographic databases or sources of grey literature, identifying relevant abstracts or full text articles, reading and appraising retrieved papers and iterating through reference lists. If you are fortunate you might have access to a librarian or information specialist who can help with searching and retrieving publications. It can be a protracted manual process, and take many months.
 
-With the development of APIs for bibliographic databases and R packages to read them it ha become possible to automate searching and literatre extraction, and with mainstreamed artificial intelligence tools form natural langauge processing (NLP) it has become possible to rapidly assess large bodies of 
+With the development of APIs for bibliographic databases and R packages to read them it has become possible to automate searching and literature extraction, and with mainstreamed artificial intelligence tools for natural langauge processing (NLP) it has become possible to rapidly assess large numbers of papers.
+
+## Example
+
+For this exercise we'll need to download the following packages
+
+* `tidyverse`
+* `tidytext`
+* `myScrapers`
+* `quanteda`
+* `Rcrawler`
+* `rvest`
+
+
+```{r}
+
+library(myScrapers)
+
+search <- "public health[MeSH] deep learning[tw]"
+start <- 2000
+end <- 2018
+n <- 336
+
+r_ph <- pubmedAbstractR(search = search, start = start, end = end, n = n)
+
+r_ph
+
+street_view_article <- readtext::readtext("https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5740675/pdf/pnas.201700035.pdf")
+
+street_view_article$text
+
+```
+
+
+## Google searching
+
+```{r}
+
+doi <- googlesearchR(as.character(r_ph[51, "DOI"], n = 1))
+
+doi[1]
+
+doi_text <- get_page_text(as.character(doi[1]))
+
+
+
+```
+
+## Searching Pubmed
+
+```{r}
+
+
+
+```
+
+
+
+### Searching Medline
+
 
 
 
