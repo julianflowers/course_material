@@ -6,15 +6,13 @@ author:
   - name: Julian Flowers 
     affiliation: Public Health England
     affiliation_url: https://www.gov.uk/phe
-date: "`r Sys.Date()`"
+date: "2018-10-07"
 output: 
    radix::radix_article:
      keep_md: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE )
-```
+
  
 Searching and critical appraising the literature is an essential skill for public health practitioners.
 
