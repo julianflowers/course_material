@@ -13,7 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE )
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE, warning = FALSE, message = FALSE )
 ```
  
 Searching and critical appraising the literature is an essential skill for public health practitioners. Traditionally, this involves manual searching medical or bibliographic databases or sources of grey literature, identifying relevant abstracts or full text articles, reading and appraising retrieved papers and iterating through reference lists. If you are fortunate you might have access to a librarian or information specialist who can help with searching and retrieving publications. It can be a protracted manual process, and take many months.
@@ -49,6 +49,8 @@ street_view_article <- readtext::readtext("https://www.ncbi.nlm.nih.gov/pmc/arti
 
 street_view_article$text
 
+supp_text <- readtext::readtext("http://www.pnas.org/content/pnas/suppl/2017/11/27/1700035114.DCSupplemental/pnas.1700035114.sapp.pdf")
+supp_text$text %>% head()
 ```
 
 
@@ -60,7 +62,8 @@ doi <- googlesearchR(as.character(r_ph[51, "DOI"], n = 1))
 
 doi[1]
 
-doi_text <- get_page_text(as.character(doi[1]))
+get_page_text(as.character(doi[1]))
+
 
 
 
