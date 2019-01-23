@@ -1,0 +1,20 @@
+---
+title: "Reading/ reference list"
+output: html_notebook
+---
+```{r}
+library(myScrapers)
+```
+
+
+* Random forest in PH.
+https://academic.oup.com/jamia/article/25/1/47/4645255
+
+
+```{r}
+
+url < "https://academic.oup.com/jamia/article/25/1/47/4645255"
+
+get_page_text(url)
+
+```

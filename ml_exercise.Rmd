@@ -1,0 +1,387 @@
+---
+title: "Machine learning exercise"
+subtitle: "Predicting small area obesity rates"
+author: "Julian Flowers"
+date: "`r Sys.Date()`"
+output: html_notebook
+---
+
+# Objective
+
+In this exercise we will use data from [Fingertips](https://fingertips.phe.org.uk) to build a series of predictive models to predict adult obesity rates in local authority areas. The machine learning task isCon supervised regression.
+
+In this exercise you will learn:
+
+1. How to use the `fingertipsR` package to extract data from the Fingertips API.
+2. Ways of pre-processing your data to prepare it for modelling
+3. Using the `caret` package to build your modelling pipeline
+4. Simple ways of assessing and comparing modelling performance
+5. Making predictions and understanding main predictors of your model.
+
+You will need to install the following packages from CRAN:
+
+* `fingertipsR`
+* `tidyverse` for data manipulation
+* `caret` for model building
+
+## Getting started
+
+* Open RStudio
+* Open a new R notebook (File > New File > R Notebook)
+* Give your notebook a title, add your name and date in the YAML header at the top of the page
+* If you want to share your output you can set up an `RPubs` account.
+
+```{r}
+---
+title: "Your title"
+author: "Your name"
+date: "`r Sys.Date()`"
+---
+```
+
+
+
+## Extracting and exploring the data 
+
+The dataset we will be using is the [*Local Authority Health Profile*](https://fingertips.phe.org.uk/profile/health-profiles). This is an annual dataset of key health indicators for each upper and lower tier local authorities.
+
+Fingertips works on a set of IDs. Each profile has a unique ID - we can use the `profiles()` function to identify the ID for the health profiles.
+
+```{r profiles, include = FALSE, results='hide'}
+profiles <- profiles()
+
+profiles %>% dplyr::filter(ProfileName == "Local Authority Health Profiles") %>% pull(ProfileID) %>% unique()
+
+
+```
+
+
+```{r areas, include = FALSE, results='hide'}
+areas <- area_types()
+
+areas %>%
+  dplyr::filter(AreaTypeName == "Local authority districts and Unitary Authorities") %>% 
+  pull(AreaTypeID) %>%
+  unique()
+
+```
+
+
+### *Exercise 1: find the profile id for the Local Authority Health Profiles*
+
+
+####[**Hint**](https://gist.github.com/julianflowers/5a74ca4f4824fce68a437004831717b5)
+
+We can now pass the ProfileID to the `fingertips_data` function to extract the profile data. Upper tier local authority data is downloaded by default. To change the geographical unit we need to use the `AreaTypeID` argument. We can identify AreaTypeIDs with the `area_types()` function.
+
+### *Exercise 2: download profile data for lower tier local authorities*
+
+####[**Hint**](https://gist.github.com/julianflowers/414fd5043f07c27a4393defd4a5babac)
+
+```{r data, include = FALSE, results='hide'}
+
+data <- fingertips_data(ProfileID = 26, AreaTypeID = 101)
+
+```
+
+Success? You should have a data frame with `r nrow(data)` rows and `r ncol(data)` columns.
+
+### *Exercise 3: explore the data*
+
+####[**Hint**](https://gist.github.com/julianflowers/4f453af26c1bd3def5379d5592101130)
+
+
+Its usually a good idea to explore the data before moving on. For example how many features does the data set contain? Are the variable values normally distributed - might we need to undertake data transformations? How many time periods are there. For rhis exercise you might want to create tabular data summaries or visualisations.
+
+How many features (variables) are there?
+
+```{r}
+
+unique(data$IndicatorName)
+
+```
+
+------------
+
+
+## Preparing data for modelling
+
+In this section we will:
+
+* For the purposes of the exercise identify the latest data for each variable
+* Extract data for UTLAs
+* Explore missing data in the dataset and decide how to deal with it - many models can't deal with missing data
+* Convert our data from long to wide format
+
+We can also remove highly correlated variables and undertake data transformations at this stage.
+
+### *Exercise 4: filter your dataset for the latest data for each variable and ltlas*
+
+####[**Hint**](https://gist.github.com/julianflowers/2d99d21ffae88faa6c2acb3e194317cf)
+
+```{r data1, include = FALSE, results='hide'}
+
+data <- data %>% mutate(index = paste(IndicatorName, Sex, Age))
+
+data1 <- data %>% group_by(index) %>% dplyr::filter(TimeperiodSortable == max(TimeperiodSortable), AreaType == "District & UA") %>% ungroup()
+
+```
+
+You should now have a dataset with `r nrow(data1)` rows and `r ncol(data1)` columns.
+
+### *Exercise 5: Missing data. Calculate the proportion of data missing for each variable. How might you deal with missing data?*
+
+####[**Hint**](https://gist.github.com/julianflowers/ab06efacf25d4e8e3e068b191f949e28)
+
+```{r missing, include = FALSE, results='hide'}
+
+data1_na <- data1 %>% group_by(index) %>% summarise(index_na = mean(is.na(Value)))
+
+data1_na
+
+high_miss <- data1_na %>% dplyr::filter(index_na > .2)
+
+```
+
+There are 9 variables with more than 10% data missing and 21 with <10% data missing.
+
+* Which variables have >10% data missing?
+* Which variables have <10% data missing?
+
+How would you deal with these?
+
+####[**Hint**](https://gist.github.com/julianflowers/f7a78af9ee8f39af478e3d1a806d1b37)
+
+
+```{r impute-missing, include = FALSE, results='hide'}
+
+data2 <- data1 %>% 
+    select(contains("Area"), index, Value) %>%
+    spread(index, Value) %>%
+    select_if(is.numeric) %>%
+    select_if( ~mean(is.na(.)) < 0.2) %>%
+    mutate_if(is.numeric, function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x))
+
+mean(is.na(data2))
+
+```
+
+### *Exercise 6: remove highly correlated variables*
+
+One pre-processing technique to reduce the number of features is to remove highly correlated variables. How might you do this?
+
+####[**Hint**](https://gist.github.com/julianflowers/f7a78af9ee8f39af478e3d1a806d1b37)
+
+```{r highly-correlated-variables, include = FALSE, results='hide'}
+
+data2_cor <- data2 %>%
+  select_if(is.numeric) %>%
+  cor(.) 
+
+highly_correlated <- caret::findCorrelation(data2_cor, cutoff = .9)
+
+complete_data <- data2[, -highly_correlated]
+
+``` 
+
+We now have a dataset of `r nrow(complete_data)` rows and `r ncol(complete_data)` columns.
+
+-----------
+
+
+## Model building
+
+We are now ready to build our models. Our target variable is `Excess weight in adults (aged 18+) Persons 18+ yrs`.
+
+We'll use the `caret` package to build our ml pipeline^[[Wickham](https://r4ds.had.co.nz/model-intro.html#hypothesis-generation-vs.hypothesis-confirmation)  distinguishes between *exploratory or inferential* modelling and *confirmatory* modelling. 
+
+* Each observation can either be used for exploration or confirmation, not both.
+  
+* You can use an observation as many times as you like for exploration, but you can only use it once for confirmation. As soon as you use an observation twice, you’ve switched from confirmation to exploration.]  
+
+and we'll compare three algorithms - a linear model `glmnet`, a decision tree `rpart` and a random forest `ranger`. You can follow the samne principles for any other regression algorithms available in `caret`.
+
+Use ??caret to see more and **we recommend** reading the [caret web pages](https://topepo.github.io/caret/index.html).
+
+The approach is:
+
+1. Splitting the data into training and test sets
+2. Setting up cross-validation
+3. Training the models on the training data set
+4. Evaluating and model performance
+5. Predicting values on the test data
+6. Evaluating out-of-sample performance
+7. ...
+8. Model tuning is beyonn the scope of this exercise but most models allow tweaking (hyperparameter adjustments) and `caret` allows for grid searching to identify the best combination of hyperparameters.
+
+### *Exercise 7: Data splitting*
+
+There are a number of ways of doing this but we will use the `createDataPartition` function in `caret`. Generally data splits are 70% training, 30% test although you can read about alternative including training:test:validation splits. 
+
+```{r data split}
+
+library(caret)
+
+index <- createDataPartition(complete_data$`Excess weight in adults (aged 18+) Persons 18+ yrs`, p = 0.7, list = FALSE)
+train <- complete_data[index, ]
+test <- complete_data[-index, ]
+
+
+```
+
+
+**Compare the train and test sets to confirm that the randomisation process has produced comparable datasets**
+
+### *Exercise 8: Cross validation*
+
+**What is cross validation?** 
+
+In `caret` we can use `trainControl` to cross validate. Note that for reproducibility we need to *set a seed*.
+
+```{r}
+ 
+set.seed(42)
+
+control <- trainControl(method = "repeatedcv", number = 10, repeats = 3, savePredictions = TRUE)
+
+
+```
+
+## Running models 
+
+We will run each model individually to see how it works but you can run them all together using the `caretEnsemble` package - you may like to try this as a separate exercise.
+
+### rpart
+
+`rpart` runs the *CART*() algorithm a create a decision tree. We can run it as follows:
+
+```{r rpart, echo=TRUE, warning = FALSE}
+
+train <- train %>% janitor::clean_names() ## rpart doesn't like variable names with spaces
+
+model.rpart <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = train, method = "rpart", trControl = control)
+
+
+
+
+```
+
+
+### glmnet
+
+```{r glmnet, echo = TRUE}
+
+train <- train %>% janitor::clean_names() ## rpart doesn't like variable names with spaces
+
+model.glmnet <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = train, method = "glmnet", trControl = control)
+
+
+
+
+```
+
+### *Exercise 9: Training using the `ranger` algorithm*  
+
+Your turn. Run the `ranger` algorithm
+
+```{r ranger, include = FALSE, results="hide"}
+
+train <- train %>% janitor::clean_names() ## rpart doesn't like variable names with spaces
+
+model.ranger <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = train, method = "ranger", trControl = control)
+
+
+
+```
+
+###**Comapring model performance**
+
+You can extract model performance statistics for each model using the `model.x$results` formulation. Do this for each model.
+
+* What performance measures are available?
+* On the basis of the available data which appears to be the "best" model.
+
+####**[Hint]()**
+
+### *Exercise 9: Using `resamples` to compare models.*
+
+
+The `resamples` function is very useful for comparing model performance and the output can be readily visualised.
+
+**Use `resamples` to compare your models and `dotplot` to visualise. What do you discover?**
+
+####**[Hint](https://gist.github.com/julianflowers/ef0dca0d17e6a25846e1c68bd91bcbd7)**
+
+```{r resamples, include=FALSE, results="hide"}
+
+models <- list(rpart = model.rpart, glmnet = model.glmnet, ranger = model.ranger)
+resamples <- resamples(models)
+summary(resamples)
+dotplot(resamples)
+
+```
+
+**What conclusions do you draw so far?**
+
+### Making predictions on test data
+
+To do this we will use the best model from the exercise above. This is achieved using the `predict` function. This takes the form `predict(model, newdata)`
+
+
+```{r prediction}
+
+test <- test %>%
+  janitor::clean_names()
+
+pred_test <- predict(model.glmnet, newdata = test)
+
+
+```
+
+### *Exercise 10: calculate the accuracy of your prediction on the test data and visualise the comparison between your prediction and the observed data*
+
+#### Accuracy
+
+```{r test_rmse}
+
+rmse <- sqrt(mean((pred_test - test$excess_weight_in_adults_aged_18_persons_18_yrs)^2))
+
+rmse
+
+
+```
+
+#### Plot
+
+```{r vis}
+plot_data <- data.frame(prediction = pred_test, observed = test$excess_weight_in_adults_aged_18_persons_18_yrs)
+
+ggplot(aes(prediction, observed), data = plot_data) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  geom_abline(intercept = 0, slope = 1, colour = "red") +
+  phecharts::theme_phe() +
+  labs(caption = "red line = perfect fit", 
+       title = "Predicted vs observed LA excess weight prevalence in test set")
+
+```
+
+## From black box to white box
+
+We have seen that we can predict excess weight in adults with reasonable accuracy (you might disagree!) but can we understand what the best predictors are in our model? 
+
+One approach to this is to extract the *variable importance* using the `varImp` function.
+
+### *Exercise 11: Extract and plot variable importance for your mode and the rpart model. What do you notive*
+
+####**[Hint]()**
+
+```{r vimp, include=FALSE, results="hide"}
+
+varImp <- varImp(model.rpart)
+plot(varImp)
+
+```
+
+
+
