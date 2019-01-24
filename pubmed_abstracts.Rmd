@@ -1,11 +1,12 @@
 ---
-title: "Untitled"
-output: github_document
+title: "Analysing pubmed abstracts"
+output: html_notebook
 ---
 
 ```{r setup}
 
-knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE, echo = TRUE)
+library(purrr)
 
 ```
 
@@ -28,9 +29,9 @@ To assist this we can use the `pubmedAbstractR` function from the `myScrapers` p
 For this exercise we need to install the `myScrapers` package as follows:
 
 ```{r install, eval=FALSE}
-
-devtools::install_github("julianflowers/myScrapers")
-
+if(!require("myScrapers"))
+devtools::install_git("https://gitlab.phe.gov.uk/packages/myScrapers", force = TRUE)
+library(myScrapers)
 
 ```
 
@@ -39,7 +40,7 @@ devtools::install_github("julianflowers/myScrapers")
 
 ### Non-specific searching
 
-Let us say we want to search for *machine learning in public health*. We can pass this as a search term to `pubmedAbstractR` as follows. Let's set n = 1 to being with.
+Let us say we want to search for *machine learning in public health*. We can pass this as a search term to `pubmedAbstractR` as follows. Let's set n = 1 to begin with.
 
 ```{r search-1, message=FALSE, warning=FALSE}
 
@@ -58,7 +59,7 @@ abstracts <- pubmedAbstractR(search = search, start = start, end = end, n = 1)
 
 ```
 
-We can see this gives a non-specific search which would return 8720 abstracts.
+We can see this gives a non-specific search which would return 9518 abstracts.
 
 ### Specific searching
 
@@ -78,57 +79,116 @@ abstracts <- pubmedAbstractR(search = search, start = start, end = end, n = 1)
 
 ```
 
-Lets download the most recent 500 with associated keywords and authors.
+There are now 5502 abstracts. We will download these for future reference.
 
-```{r search-3, message=FALSE, warning=FALSE, cache=TRUE}
+```{r search-3, message=FALSE, warning=FALSE}
 
 library(myScrapers)
 
 search <- "machine learning[MeSH] and public health[MeSH]"
 start <- 2008
 end <- 2018
-n <- 500
+n <- 5502
+  
+  
+abstracts1 <- pubmedAbstractR(search = search, start = start, end = end, n = n)
+
+```
+
+
+
+Lets download the most recent 10 with associated keywords and authors (NB this may take a few minutes)
+
+```{r search-4, message=FALSE, warning=FALSE, cache=TRUE}
+
+library(myScrapers)
+
+search <- "machine learning[MeSH] and public health[MeSH]"
+start <- 2008
+end <- 2018
+n <- 10
   
   
 abstracts <- pubmedAbstractR(search = search, start = start, end = end, n = n, authors = TRUE, keyword = TRUE)
 
-head(abstracts, 20)
+abstracts
+
+```
+
+or the most recent 3000 with keywords
+
+```{r}
+
+search <- "machine learning[MeSH] and public health[MeSH]"
+start <- 2008
+end <- 2019
+n <- 3000
+  
+  
+abstracts_kw <- pubmedAbstractR(search = search, start = start, end = end, n = n, authors = FALSE, keyword = TRUE)
+
+abstracts_kw
 
 ```
 
 
 ## Simple analysis
 
-### Abstracts per year
+### Abstracts per journal
 
-We can undertake simple analysis such as the frequency of abstracts over time - see #Figure 4.1 which shows that the frequency of apparent relevant articles has grown in the last 3-4 years.
+We can undertake simple analysis such as the frequency of abstracts by journal - see #Figure 4.1 which shows that the frequency of apparent relevant articles has grown in the last 3-4 years.
 
-```{r abs-freq-chart, fig.cap= "Abstract frequency per year"}
+```{r abs-freq-chart, fig.width=12}
 
-abstracts %>%
-  group_by(year) %>%
+abstracts1 %>%
+  group_by(journal) %>%
   count() %>%
+  dplyr::filter(n > 10) %>%
   #spread(year, n, fill = 0) %>%
-  ggplot(aes(year, n)) +
-  geom_col(fill = "red") +
+  ggplot(aes(reorder(journal, n), n)) +
+  geom_col() +
+    coord_flip() +
   labs(title = "Abstract frequency: ", 
        subtitle =  search) +
-  theme(plot.subtitle = element_text(size = rel(.7)))
+  theme(plot.subtitle = element_text(size = rel(.7)),
+        axis.text.y = element_text(size = 7))
 
 
 ```
 
+
+## Mesh terms
+
+We can look at the most frequently used Mesh terms.
+
+```{r mesh, fig.height=8}
+
+mesh <- abstracts_kw %>%
+  count(keyword, year)
+
+mesh %>%
+  top_n(100) %>%
+  arrange(-n) %>%
+  ggplot(aes(year, reorder(keyword, n), fill = n)) +
+  geom_tile() +
+  phecharts::theme_phe() +
+  viridis::scale_fill_viridis()
+
+```
+
+
+
 ## Wordcloud
 
-A simple way of visualising the abstracts is to *tokenise* them into 1, 2 and 3 ngrams and then plot occurrence frequency as a wordcloud. We can easily do this with the `quanteda` pacakge.
+A simple way of visualising the abstracts is to *tokenise* them into 1 and 2 ngrams and then plot occurrence frequency as a wordcloud. We can easily do this with the `quanteda` pacakge.
 
-```{r wordcloud, fig.cap="Wordcloud of 6820 abstracts"}
+```{r wordcloud, fig.cap="Wordcloud of 5000 abstracts"}
 
 library(quanteda)
 
-abstracts$abstract <- tm::removeWords(abstracts$abstract, stopwords("english"))
+abstracts1$abstract <- tm::removeWords(abstracts1$abstract, stopwords("english"))
 
-abs_corpus <- corpus(abstracts$abstract)
+abs_corpus <- corpus(abstracts1$abstract)
 abs_dfm <- dfm(abs_corpus, remove = stopwords("en"), ngrams = 1:2, remove_punct = TRUE)
 
 textplot_wordcloud(abs_dfm )
@@ -147,15 +207,70 @@ We can create a list of terms of interest and use the to find which abstracts th
 
 ```{r dictionary search}
 
-abs_dict <- dictionary(list(ai = c("artificial intelligence", "ai"), 
+abs_dict <- dictionary(list(ai = c("artificial_intelligence", "ai"), 
                             obesity = "obes*", 
                             tobacco = c("smok*", "tobacco", "cigar*"), 
                             heart_disease = c("heart", "cardi*"), 
                             diabetes = "diabet*", 
-                            cancer = "cancer*" 
+                            cancer = "cancer*" , 
+                            svm = "support_vector*", 
+                            rf = "random_forest", 
+                            nn = "neural_network*",
+                            ph = "public_health", 
+                            regr = c("regression", "xgb*", "gbm",  "lasso", "glmnet*", "penalised*"), 
+                            cluster = c("cluster*", "kmeans", "k-means", "hierarchical clus*")
                             ))
+
+abs_dict
+```
+## Clustering articles
+
+```{r}
   
 lookup <- dfm_lookup(abs_dfm, dictionary = abs_dict)
 
+lu1 <- lookup %>%
+  convert(., to = "data.frame") %>%
+  gather(theme, value, 2:ncol(.)) %>%
+  #filter(value > 0, theme %in% c("rf", "ph")) %>%
+  spread(theme, value, fill = 0) %>%
+  dplyr::filter( cluster> 0, ph >0)
+
+lu1
+
 ```
+
+## Look at a random sample of articles
+
+```{r}
+
+docvars(abs_corpus, "year") <- abstracts1$year
+docvars(abs_corpus, "title") <- abstracts1$title
+docvars(abs_corpus, "journal") <- abstracts1$journal
+docvars(abs_corpus, "doi") <- abstracts1$DOI
+
+
+corp_df <- docvars(abs_corpus) %>%
+  rownames_to_column("document")
+
+lu1 %>%
+  #sample_frac(.5) %>%
+  left_join(corp_df) %>%
+  arrange(doi) %>%
+  select(-document) %>%
+  distinct()
+
+
+
+```
+
+
+## Explore article content
+
+We can use text mining techniques to extract information from articles either in pdf or web form. For example there is a useful table about the applications of deep learning in public health in <https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=7801947>.
+
+We can (attempt) to extract the relevant table from the pdf version using the `tabulizer` package or extract information from web pages
+
+![](https://ieeexplore.ieee.org/mediastore_new/IEEE/content/media/6221020/7839252/7801947/ravi.t3-2636665-large.gif)
+
 
