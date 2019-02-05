@@ -91,7 +91,7 @@ Success? You should have a data frame with `r nrow(data)` rows and `r ncol(data)
 ####[**Hint**](https://gist.github.com/julianflowers/4f453af26c1bd3def5379d5592101130)
 
 
-Its usually a good idea to explore the data before moving on. For example how many features does the data set contain? Are the variable values normally distributed - might we need to undertake data transformations? How many time periods are there. For rhis exercise you might want to create tabular data summaries or visualisations.
+Its usually a good idea to explore the data before moving on. For example how many features does the data set contain? Are the variable values normally distributed - might we need to undertake data transformations? How many time periods are there? For this exercise you might want to create tabular data summaries or visualisations.
 
 How many features (variables) are there?
 
@@ -109,7 +109,7 @@ unique(data$IndicatorName)
 In this section we will:
 
 * For the purposes of the exercise identify the latest data for each variable
-* Extract data for UTLAs
+* Extract data for LTLAs
 * Explore missing data in the dataset and decide how to deal with it - many models can't deal with missing data
 * Convert our data from long to wide format
 
@@ -199,7 +199,7 @@ We'll use the `caret` package to build our ml pipeline^[[Wickham](https://r4ds.h
   
 * You can use an observation as many times as you like for exploration, but you can only use it once for confirmation. As soon as you use an observation twice, you’ve switched from confirmation to exploration.]  
 
-and we'll compare three algorithms - a linear model `glmnet`, a decision tree `rpart` and a random forest `ranger`. You can follow the samne principles for any other regression algorithms available in `caret`.
+and we'll compare three algorithms - a multiple regression model, `glm`, a regularised linear model `glmnet`, a decision tree `rpart` and a random forest `ranger`. You can follow the samne principles for any other regression algorithms available in `caret`.
 
 Use ??caret to see more and **we recommend** reading the [caret web pages](https://topepo.github.io/caret/index.html).
 
@@ -250,6 +250,18 @@ control <- trainControl(method = "repeatedcv", number = 10, repeats = 3, savePre
 ## Running models 
 
 We will run each model individually to see how it works but you can run them all together using the `caretEnsemble` package - you may like to try this as a separate exercise.
+
+### glm
+
+```{r}
+
+train <- train %>% janitor::clean_names() ## rpart doesn't like variable names with spaces
+
+model.glm <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = train, method = "glm", trControl = control)
+
+```
+
+
 
 ### rpart
 
@@ -314,7 +326,7 @@ The `resamples` function is very useful for comparing model performance and the 
 
 ```{r resamples, include=FALSE, results="hide"}
 
-models <- list(rpart = model.rpart, glmnet = model.glmnet, ranger = model.ranger)
+models <- list(glm = model.glm, rpart = model.rpart, glmnet = model.glmnet, ranger = model.ranger)
 resamples <- resamples(models)
 summary(resamples)
 dotplot(resamples)
@@ -372,16 +384,44 @@ We have seen that we can predict excess weight in adults with reasonable accurac
 
 One approach to this is to extract the *variable importance* using the `varImp` function.
 
-### *Exercise 11: Extract and plot variable importance for your mode and the rpart model. What do you notive*
+### *Exercise 11: Extract and plot variable importance for your model and the rpart model. What do you notice*
 
 ####**[Hint]()**
 
 ```{r vimp, include=FALSE, results="hide"}
 
-varImp <- varImp(model.rpart)
+varImp <- varImp(model.glm)
 plot(varImp)
 
 ```
 
 
+
+### Supplementary exercises
+
+Population segmentation is growing in importance for precision public health, population health management, and targetted prevention. It is nothing new  - there are existing area classifications and segmentation tools like Acorn and Experian. These tend to be driven by sociodemographic variables, but there is interest in "data-driven" segmentation. With rising popularity of R we have access to a range of clustering tools for segmentation (clustering is usually classified as unsupervised machine learning) - sone well know like `kmeans`, some less well known like `self-organising maps`.
+
+In this exercise we will use self-organising maps (availabe throuth the `kohonen` package) to segment our populations. SOMs are based on a neural network - more information is available [here]() and [here](). 
+
+
+
+```{r}
+
+install.packages("kohonen")
+
+library(kohonen)
+
+d <- as.matrix(scale(train))
+
+som <- som(as.matrix(scale(train)), grid = somgrid(xdim = 2, ydim = 5, "rectangular"))
+
+summary(som)
+
+plot(som, type = "counts")
+som.hc <- cutree(hclust(object.distances(som, "codes")), 5)
+
+plot(som.hc)
+add.cluster.boundaries(som, som.hc)
+
+```
 
