@@ -1,0 +1,335 @@
+---
+title: "ML literature in PH"
+subtitle: "Exercise using unsupervised machine learning"
+author: "Julian Flowers"
+date: "1 February 2019"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+# Introduction
+
+In this exercise we are going to look at trends in machine learning algorithms used in the public health literature.
+
+## Objectives
+
+1. Learn how to download PubMed abstracts to R using the `pubmedAbstractR` function in the `myScrapers` package.
+2. Learn how to perform a basic natural processing pipeline using the `tidytext` and `quanteda` package
+3. Use unsupervised machine learning to classify abstracts and try and extract themes and trends from abstract titles
+
+This exercise is based on https://projects.datacamp.com/projects/158.
+
+### First step
+
+We need to install relevant packages if not already installed. `tidytext` and `quanteda` can be installed from CRAN. `myScrapers` is available from Github. We'll also use `dplyr` for data wrangling and `ggplot2` for visualisation and `stm` for topics modelling.
+
+```{r}
+if(!require("myScrapers"))
+devtools::install_github("julianflowers/myScrapers")
+library(myScrapers)
+library(dplyr)
+library(tidytext)
+library(ggplot2)
+library(quanteda)
+library(stm)
+
+
+```
+
+
+### Downloading abstracts
+
+To this we need to pass 4 arguments to the `pubmedAbstractR` function:
+
+* a `search` term - this can take full Pubmed syntax (it is built on top of `RISmed`)
+* a `start` year
+* an `end` year
+* `n` = number of abstracts to be downloaded. We recommend using n = 1 initially - this will return how many abstracts are available to be downloaded and you can an adjust the value of n accordingly. The default value is 1000.
+
+### Example search 
+
+```{r}
+search <- "randomforest public health"
+start <- 2010
+end <- 2018
+n <- 1
+
+result <- pubmedAbstractR(search = search, start = start, end = end, n = n)
+
+```
+
+We can see this search retrieves 20 titles - we can download all for inspection
+
+```{r}
+n <- 20
+
+rf <- pubmedAbstractR(search = search, start = start, end = end, n = n)
+
+head(rf, 10)
+
+
+
+```
+
+## Your turn
+
+Try searching for and downloading machine learning articles in public health over the last 10 years. (Hint: using public health[mh] in your search string, restricts the search to MeSH headings ). Note: it takes a few minutes to download the abstracts.
+
+HINT: https://gist.github.com/julianflowers/2ca8a062e86b7752bacbc66609314d95
+
+```{r, cache=TRUE, echo=FALSE, results="hide"}
+
+start <- 2008
+end <- 2019
+n <- 5547
+search <- "machine learning[mh] public health[mh]"
+check <- pubmedAbstractR(search = search, n = n, start = start, end = end)
+
+```
+
+### Simple NLP pipeline
+
+There is a fairly standard approach:
+
+* Ingest your text
+* Clean texts - remove unwanted text e.g. stopwords (common English words like *the, a, at, in* etc.), remove punctuation, remove html tags and urls
+* Create a *corpus* - that is a body of texts - this is a speciliased  data format which holds the raw text along with metadata - this is necessary for some package like `quanteda`.
+* Tokenise - that is split texts into basic units - this can be anything from single characters to paragraphs. The usual approach is to split texts into words - this is known as a *bag of words*. A single word is known as a 1-gram; if we use two word combinations, this is *bigram*, 3 word is a 3-gram and so on. Combinations of non consecutive words are known as *skip grams*.
+* Create a **document term** or **document feature matrix**. This is the basis of futher analysis, and is a table where the rows are your documets, the columns are your ngrams (terms) and the cells are counts of each term in each document. This matrix will be *sparse*  - that is full of 0s, and can have large numbers of columns (sometimes billions).
+
+We are going to do a number of things.
+
+1. *Tokenise* the title of each article into 2 word combinations (bigrams) (because it'll make it easier to extract algorithm names). You can achieve this with the `create_bigrams` function in `myScrapers` or you can build it from scratch (https://www.tidytextmining.com/ngrams.html), and count token frequency.
+
+**Tokenise the titles of your downloaded abstracts and visualise your result showing the most frequent bigrams over time**
+
+```{r fig.height=4, fig.width=12, results="hide"}
+
+bigrams <- check %>%
+  create_bigrams(title)
+  
+bigrams %>%
+  count(bigram, year) %>%
+  dplyr::top_n(100) %>%
+  ggplot(aes(bigram, fct_rev(year), fill = n)) +
+  geom_tile() +
+  theme(axis.text.x= element_text(size = 7, angle = 90, hjust = 0)) +
+  scale_x_discrete(position = "top") +
+  scale_fill_distiller(palette = "Spectral")
+
+```
+
+Visualise your result.
+
+What conclusions do you draw?
+
+
+
+## Topic modelling
+
+Topic modelling is a form of unsupervised machine learning intended to find themes in bodies of texts. 
+
+[TO COMPLETE]
+
+To perform topic modelling we need to:
+
+* Convert our data to a matrix format known as a document-term-matrix (DTM) or a sparese matrix.
+* For this exercise we will use the `stm` (Structural topic modelling) package and apply 15 topics (note this is soemwhat arbitrary - see further reading for techniques to determine statistical optima for numbers of topic models).
+* We'll also use single word models rather than bigrams.
+
+
+```{r}
+library(stm); library(stmCorrViz)
+
+big_dfm <- check %>%
+  unnest_tokens(word, title) %>%
+  anti_join(get_stopwords()) %>%
+  count(DOI, word, sort = TRUE) %>%
+  cast_dfm(DOI, word, n )
+
+topic_model <- stm(big_dfm, K = 15, 
+                   verbose = FALSE, init.type = "Spectral")
+
+
+
+
+```
+
+
+```{r, eval = FALSE}
+library(stm)
+library(pipeR)
+devtools::install_github("timelyportfolio/stmCorrViz@htmlwidget")
+
+
+textProcessor(
+  documents=check$abstract
+  ,metadata=check
+) %>>%
+  (
+    prepDocuments( .$documents, .$vocab, .$meta )
+  ) %>>%
+( ~out ) %>>% #save as out for later
+  ({
+    set.seed(02138)
+    stm( .$documents, .$vocab, 20,
+       #prevalence=~treatment + s(year),
+       data = .$meta 
+    )
+  }) %>>%
+~ mod_out
+
+stmCorrViz::stmCorrViz(mod_out, "test.html")
+
+proc <- textProcessor(documents = check$abstract, metadata = check)
+out <- prepDocuments(proc$documents, proc$vocab, proc$meta)
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+
+prevfit <- stm(documents = docs, vocab = vocab, K = 50, max.em.its = 50, data = meta, init.type = "Spectral")
+
+save.image("stm_test.RData")
+
+```
+
+
+
+
+the `stm` has a number of useful plotting options to visualise your results. **Try plotting your results and createing a word cloud**. Type ??stm if you need help
+
+```{r, results="hide" }
+
+plot(topic_model, n = 5, text.cex = 0.8)
+
+```
+
+
+```{r, results = "hide"}
+topic_model %>% cloud()
+```
+
+
+
+* next we can "tidy" the model outputs usng the `tidy` function. This extracts the `r expression(beta)` coefficients which represents the probabiklity of a given work being in a given topic. By extracting words (terms) with teh highet `r expression(beta)` values, we can create a set of keyowrds for that topic and infer themes.
+
+```{r}
+
+tidy_tm <- tidy(topic_model)
+
+
+tidy_tm
+  
+```
+
+
+
+To clarify we can visualise the data to show terms with the highest probablity for each topic.
+
+**Create a visualisation to show the top 10 terms in each of teh 15 topics. Label the topics to reflect the terms**
+
+```{r fig.height=10, }
+#install_github("dgrtwo/drlib")
+
+library(drlib)
+
+tidy_tm %>%
+    group_by(topic) %>%
+    top_n(10, beta) %>%
+    ungroup() %>%
+    mutate(topic = paste0("Topic ", topic), 
+           term = reorder_within(term, beta, topic)) %>%
+    ggplot(aes(term, beta, fill = as.factor(topic))) +
+    geom_col(alpha = 0.8, show.legend = FALSE) +
+    facet_wrap(~ topic, scales ="free") +
+    coord_flip() +
+    scale_x_reordered() +
+    labs(x = NULL, y = expression(beta),
+         title = "Highest word probabilities for each topic",
+         subtitle = "Different words are associated with different topics") +
+  phecharts::theme_phe() +
+  ggsave("ml_ph_themes.png")
+```
+
+We can look at how these topics vary over time
+
+```{r}
+
+top_terms <- tidy_tm %>%
+  group_by(topic) %>%
+  arrange(-beta)%>%
+  slice(1:10) %>%
+  mutate(kw = paste(term, collapse = ", ")) %>%
+  select(topic, kw) %>%
+  distinct()
+
+td_gamma <- tidy(topic_model, matrix = "gamma",                    
+                 document_names = rownames(big_dfm)) %>%
+  group_by(document) %>%
+  dplyr::filter(gamma == max(gamma)) %>%
+  left_join(check, by = c("document" = "DOI"))
+
+td_gamma %>%
+  select(-document) %>%
+  dplyr::filter(year != 2019) %>%
+  left_join(top_terms) %>%
+  group_by(year) %>%
+  count(kw) %>%
+  ggplot(aes(year, n, fill = factor(kw))) +
+  geom_col(show.legend = FALSE) +
+  viridis::scale_fill_viridis(discrete = TRUE) +
+  facet_wrap(~ kw, ncol = 3, labeller = label_wrap_gen(40)) +
+  labs(title = "Trend in machine learning topics",
+       y = "Number of articles", x = "Year") +
+  phecharts::theme_phe() +
+  theme(strip.text.x = element_text(size = rel(.6)))
+
+
+
+```
+
+Questions
+
+* What are the downsides to topic modelling?
+* How might you improve your results?
+
+### Advanced
+
+#### Relationship between topics
+
+```{r}
+topic_corr <- topicCorr(topic_model)
+plot(topic_corr)
+
+  
+```
+
+
+#### Online visualisations
+
+```{r}
+remotes::install_github("mroberts/stmBrowser",dependencies=TRUE)
+install.packages("stminsights")
+library(stmBrowser); library(stminsights)
+
+run_stminsights()
+```
+
+
+```{r, eval=FALSE}
+
+stmCorrViz::stmCorrViz(prevfit, file = "test_1.html", documents_raw = check$abstract,  documents_matrix = data = meta, text = "abstract")
+
+```
+
+
+
+```{r}
+stmCorrViz::stmCorrViz(mod = topic_model, file_out = "example.html", documents_raw = check$title, documents_matrix = big_dfm)
+
+
+summary(topic_model)
+```
