@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
 
 # Introduction
 
-In this exercise we are going to look at trends in machine learning algorithms used in the public health literature.
+In this exercise we are going to look at trends in machine learning algorithms used in the public health literature. We are going to search [Pubmed](https://www.ncbi.nlm.nih.gov/pubmed/) which is a large, comprehensive, and freely availalble bibliogaphic database of references with a powerful search syntax.
 
 ## Objectives
 
@@ -24,7 +24,11 @@ This exercise is based on https://projects.datacamp.com/projects/158.
 
 ### First step
 
-We need to install relevant packages if not already installed. `tidytext` and `quanteda` can be installed from CRAN. `myScrapers` is available from Github. We'll also use `dplyr` for data wrangling and `ggplot2` for visualisation and `stm` for topics modelling.
+We need to install relevant packages if not already installed. `tidytext` and `quanteda` can be installed from CRAN. `myScrapers` is available from Github. We'll also use `dplyr` for data wrangling and `ggplot2` for visualisation and `stm` for topic modelling.
+
+Topic modelling is a form of unsupervised machine learning used to classify texts. In natural language processing, you turn text into data you can analyse in the form out a table of word counts per document, and the clustering of words within and between documents can be analysed to find themes (topics) within and between your texts.
+
+For more resources see the suggested reading list at the end of the exercise.
 
 ```{r}
 if(!require("myScrapers"))
@@ -42,14 +46,18 @@ library(stm)
 
 ### Downloading abstracts
 
-To this we need to pass 4 arguments to the `pubmedAbstractR` function:
+To do this we need to pass 4 arguments to the `pubmedAbstractR` function:
 
-* a `search` term - this can take full Pubmed syntax (it is built on top of `RISmed`)
+* a `search` term - this can take full Pubmed syntax (it is built on top of `RISmed`) (See [here](https://www.ncbi.nlm.nih.gov/books/NBK3827/#pubmedhelp.PubMed_Quick_Start) for further details.
 * a `start` year
 * an `end` year
 * `n` = number of abstracts to be downloaded. We recommend using n = 1 initially - this will return how many abstracts are available to be downloaded and you can an adjust the value of n accordingly. The default value is 1000.
 
+(You can also extract authors by setting author = TRUE, and keywords (MeSH tags) by setting keyword = TRUE. For this exercise we suggest leaving the default  = FALSE for both as it returns a much smaller table).
+
 ### Example search 
+
+As a taster try the following search.
 
 ```{r}
 search <- "randomforest public health"
@@ -76,7 +84,7 @@ head(rf, 10)
 
 ## Your turn
 
-Try searching for and downloading machine learning articles in public health over the last 10 years. (Hint: using public health[mh] in your search string, restricts the search to MeSH headings ). Note: it takes a few minutes to download the abstracts.
+Try searching for and downloading machine learning articles in public health over the last 10 years. (Hint: using public health[mh] in your search string, restricts the search to MeSH headings ). Note: it takes a few minutes to download the abstracts. You can build up very complex searches. For more information see [here](https://www.ncbi.nlm.nih.gov/pubmed/advanced)
 
 HINT: https://gist.github.com/julianflowers/2ca8a062e86b7752bacbc66609314d95
 
@@ -98,9 +106,9 @@ There is a fairly standard approach:
 * Clean texts - remove unwanted text e.g. stopwords (common English words like *the, a, at, in* etc.), remove punctuation, remove html tags and urls
 * Create a *corpus* - that is a body of texts - this is a speciliased  data format which holds the raw text along with metadata - this is necessary for some package like `quanteda`.
 * Tokenise - that is split texts into basic units - this can be anything from single characters to paragraphs. The usual approach is to split texts into words - this is known as a *bag of words*. A single word is known as a 1-gram; if we use two word combinations, this is *bigram*, 3 word is a 3-gram and so on. Combinations of non consecutive words are known as *skip grams*.
-* Create a **document term** or **document feature matrix**. This is the basis of futher analysis, and is a table where the rows are your documets, the columns are your ngrams (terms) and the cells are counts of each term in each document. This matrix will be *sparse*  - that is full of 0s, and can have large numbers of columns (sometimes billions).
+* Create a **document term matrix** or **document feature matrix**. This is the basis of further analysis, and is a table where the rows are your documents, the columns are your ngrams (terms) and the cells are counts of each term in each document. This matrix will be *sparse*  - that is full of 0s, and can have large numbers of columns (sometimes billions).
 
-We are going to do a number of things.
+We are going tos.
 
 1. *Tokenise* the title of each article into 2 word combinations (bigrams) (because it'll make it easier to extract algorithm names). You can achieve this with the `create_bigrams` function in `myScrapers` or you can build it from scratch (https://www.tidytextmining.com/ngrams.html), and count token frequency.
 
@@ -124,15 +132,16 @@ bigrams %>%
 
 Visualise your result.
 
+HINT: https://gist.github.com/julianflowers/19ee08b2873c2142a26f2e85b6d0b4a1
+
 What conclusions do you draw?
 
 
 
 ## Topic modelling
 
-Topic modelling is a form of unsupervised machine learning intended to find themes in bodies of texts. 
+Topic modelling is a form of unsupervised machine learning intended to automatically find themes in bodies of texts. 
 
-[TO COMPLETE]
 
 To perform topic modelling we need to:
 
@@ -140,6 +149,15 @@ To perform topic modelling we need to:
 * For this exercise we will use the `stm` (Structural topic modelling) package and apply 15 topics (note this is soemwhat arbitrary - see further reading for techniques to determine statistical optima for numbers of topic models).
 * We'll also use single word models rather than bigrams.
 
+Follow the code below:
+
+This does the following
+
+1. Creates a document-feature matrix using `tidytext` - we have split our abstracts into words, removed words we don't want and then counted the frequency of words per abstract and 'cast' the result into the correct data format for further analysis.
+2. Set a random seed - this makes the analysis more reprodicible because the algorithm starts at the same point every time. If you change the seed number you might get a different result.
+3. Used the `stm` package to apply its algorithm to detect 15 topics. You can change this and see how the output varies. If you want to see what the model is doing set `verbose` = TRUE.
+
+This may take a few minutes to run.
 
 ```{r}
 library(stm); library(stmCorrViz)
@@ -149,57 +167,17 @@ big_dfm <- check %>%
   anti_join(get_stopwords()) %>%
   count(DOI, word, sort = TRUE) %>%
   cast_dfm(DOI, word, n )
+  
+seed <- set.seed(42)  
 
-topic_model <- stm(big_dfm, K = 15, 
+topic_model <- stm(big_dfm, K = 15, seed = seed,
                    verbose = FALSE, init.type = "Spectral")
 
-
-
-
-```
-
-
-```{r, eval = FALSE}
-library(stm)
-library(pipeR)
-devtools::install_github("timelyportfolio/stmCorrViz@htmlwidget")
-
-
-textProcessor(
-  documents=check$abstract
-  ,metadata=check
-) %>>%
-  (
-    prepDocuments( .$documents, .$vocab, .$meta )
-  ) %>>%
-( ~out ) %>>% #save as out for later
-  ({
-    set.seed(02138)
-    stm( .$documents, .$vocab, 20,
-       #prevalence=~treatment + s(year),
-       data = .$meta 
-    )
-  }) %>>%
-~ mod_out
-
-stmCorrViz::stmCorrViz(mod_out, "test.html")
-
-proc <- textProcessor(documents = check$abstract, metadata = check)
-out <- prepDocuments(proc$documents, proc$vocab, proc$meta)
-docs <- out$documents
-vocab <- out$vocab
-meta <- out$meta
-
-prevfit <- stm(documents = docs, vocab = vocab, K = 50, max.em.its = 50, data = meta, init.type = "Spectral")
-
-save.image("stm_test.RData")
-
 ```
 
 
 
-
-the `stm` has a number of useful plotting options to visualise your results. **Try plotting your results and createing a word cloud**. Type ??stm if you need help
+the `stm` has a number of useful plotting options to visualise your results. **Try plotting your results and creating a word cloud**. Type ??stm if you need help
 
 ```{r, results="hide" }
 
@@ -214,7 +192,7 @@ topic_model %>% cloud()
 
 
 
-* next we can "tidy" the model outputs usng the `tidy` function. This extracts the `r expression(beta)` coefficients which represents the probabiklity of a given work being in a given topic. By extracting words (terms) with teh highet `r expression(beta)` values, we can create a set of keyowrds for that topic and infer themes.
+Now we can "tidy" the model outputs usng the `tidy` function to extract some of the results. This extracts the `r expression(beta)` coefficients which represents the probability of a given work being in a given topic. By extracting words (terms) with the highest `r expression(beta)` values, we can create a set of keyowrds for that topic and infer themes.
 
 ```{r}
 
@@ -224,14 +202,13 @@ tidy_tm <- tidy(topic_model)
 tidy_tm
   
 ```
-
-
-
 To clarify we can visualise the data to show terms with the highest probablity for each topic.
 
-**Create a visualisation to show the top 10 terms in each of teh 15 topics. Label the topics to reflect the terms**
+**Create a visualisation to show the top 10 terms in each of the 15 topics. Label the topics to reflect the terms**
 
-```{r fig.height=10, }
+HINT: https://gist.github.com/julianflowers/f9200cf0da8dbbad20a2285f6d8f170a
+
+```{r fig.height=10, results = "hide" }
 #install_github("dgrtwo/drlib")
 
 library(drlib)
@@ -254,7 +231,7 @@ tidy_tm %>%
   ggsave("ml_ph_themes.png")
 ```
 
-We can look at how these topics vary over time
+We can look at how these topics vary over time. To this we need to assign a topic number to each abstract. Abstracts may have more than one topic but we will assign the one with highest probability for that abstract. This value is known as the `r expression(gamma)` coefficient and can be extracted as below.
 
 ```{r}
 
@@ -271,6 +248,11 @@ td_gamma <- tidy(topic_model, matrix = "gamma",
   group_by(document) %>%
   dplyr::filter(gamma == max(gamma)) %>%
   left_join(check, by = c("document" = "DOI"))
+```
+
+**Take the output of `td_gamma` and plot topics over time**
+
+```{r, results = "hide"}
 
 td_gamma %>%
   select(-document) %>%
@@ -291,12 +273,23 @@ td_gamma %>%
 
 ```
 
-Questions
+## Questions
 
 * What are the downsides to topic modelling?
 * How might you improve your results?
 
+## Further reading
+
+https://en.wikipedia.org/wiki/Topic_model
+https://tedunderwood.com/2012/04/07/topic-modeling-made-just-simple-enough/
+https://www.theoj.org/joss-papers/joss.00774/10.21105.joss.00774.pdf (Quanteda)
+https://kenbenoit.net/pdfs/text_analysis_in_R.pdf ** STRONGLY RECOMMENDED
+https://www.tidytextmining.com/ ** STRONGLY RECOMMENDED
+
+
 ### Advanced
+
+Try running some of the code below for more options
 
 #### Relationship between topics
 
