@@ -8,7 +8,7 @@ output: html_notebook
 
 # Objective
 
-In this exercise we will use data from [Fingertips](https://fingertips.phe.org.uk) to build a series of predictive models to predict adult obesity rates in local authority areas. The machine learning task isCon supervised regression.
+In this exercise we will use data from [Fingertips](https://fingertips.phe.org.uk) to build a series of predictive models to predict adult obesity rates in local authority areas. The machine learning task is supervised regression.
 
 In this exercise you will learn:
 
@@ -28,15 +28,17 @@ You will need to install the following packages from CRAN:
 
 * Open RStudio
 * Open a new R notebook (File > New File > R Notebook)
-* Give your notebook a title, add your name and date in the YAML header at the top of the page
-* If you want to share your output you can set up an `RPubs` account.
+* Give your notebook a title, add your name and date in the YAML header at the top of the page (see below)
+* If you want to share your output you can set up an `RPubs` account.^[https://rpubs.com/about/getting-started]
 
-```{r}
+```{yaml, echo = TRUE}
+
 ---
 title: "Your title"
 author: "Your name"
 date: "`r Sys.Date()`"
 ---
+
 ```
 
 
@@ -70,13 +72,13 @@ areas %>%
 ### *Exercise 1: find the profile id for the Local Authority Health Profiles*
 
 
-####[**Hint**](https://gist.github.com/julianflowers/5a74ca4f4824fce68a437004831717b5)
+#### [**Hint**](https://gist.github.com/julianflowers/5a74ca4f4824fce68a437004831717b5)
 
 We can now pass the ProfileID to the `fingertips_data` function to extract the profile data. Upper tier local authority data is downloaded by default. To change the geographical unit we need to use the `AreaTypeID` argument. We can identify AreaTypeIDs with the `area_types()` function.
 
 ### *Exercise 2: download profile data for lower tier local authorities*
 
-####[**Hint**](https://gist.github.com/julianflowers/414fd5043f07c27a4393defd4a5babac)
+#### [**Hint**](https://gist.github.com/julianflowers/414fd5043f07c27a4393defd4a5babac)
 
 ```{r data, include = FALSE, results='hide'}
 
@@ -88,7 +90,7 @@ Success? You should have a data frame with `r nrow(data)` rows and `r ncol(data)
 
 ### *Exercise 3: explore the data*
 
-####[**Hint**](https://gist.github.com/julianflowers/4f453af26c1bd3def5379d5592101130)
+#### [**Hint**](https://gist.github.com/julianflowers/4f453af26c1bd3def5379d5592101130)
 
 
 Its usually a good idea to explore the data before moving on. For example how many features does the data set contain? Are the variable values normally distributed - might we need to undertake data transformations? How many time periods are there? For this exercise you might want to create tabular data summaries or visualisations.
@@ -113,11 +115,11 @@ In this section we will:
 * Explore missing data in the dataset and decide how to deal with it - many models can't deal with missing data
 * Convert our data from long to wide format
 
-We can also remove highly correlated variables and undertake data transformations at this stage.
+We can also remove highly correlated variables and undertake data transformations at this stage. `caret` has a whole set of preprocessing functions for data transformation and imputation which you can explore on the caret web pages.
 
 ### *Exercise 4: filter your dataset for the latest data for each variable and ltlas*
 
-####[**Hint**](https://gist.github.com/julianflowers/2d99d21ffae88faa6c2acb3e194317cf)
+#### [**Hint**](https://gist.github.com/julianflowers/2d99d21ffae88faa6c2acb3e194317cf)
 
 ```{r data1, include = FALSE, results='hide'}
 
@@ -131,7 +133,7 @@ You should now have a dataset with `r nrow(data1)` rows and `r ncol(data1)` colu
 
 ### *Exercise 5: Missing data. Calculate the proportion of data missing for each variable. How might you deal with missing data?*
 
-####[**Hint**](https://gist.github.com/julianflowers/ab06efacf25d4e8e3e068b191f949e28)
+#### [**Hint**](https://gist.github.com/julianflowers/ab06efacf25d4e8e3e068b191f949e28)
 
 ```{r missing, include = FALSE, results='hide'}
 
@@ -150,7 +152,7 @@ There are 9 variables with more than 10% data missing and 21 with <10% data miss
 
 How would you deal with these?
 
-####[**Hint**](https://gist.github.com/julianflowers/f7a78af9ee8f39af478e3d1a806d1b37)
+#### [**Hint**](https://gist.github.com/julianflowers/f7a78af9ee8f39af478e3d1a806d1b37)
 
 
 ```{r impute-missing, include = FALSE, results='hide'}
@@ -170,7 +172,7 @@ mean(is.na(data2))
 
 One pre-processing technique to reduce the number of features is to remove highly correlated variables. How might you do this?
 
-####[**Hint**](https://gist.github.com/julianflowers/f7a78af9ee8f39af478e3d1a806d1b37)
+#### [**Hint**](https://gist.github.com/julianflowers/f7a78af9ee8f39af478e3d1a806d1b37)
 
 ```{r highly-correlated-variables, include = FALSE, results='hide'}
 
@@ -193,13 +195,13 @@ We now have a dataset of `r nrow(complete_data)` rows and `r ncol(complete_data)
 
 We are now ready to build our models. Our target variable is `Excess weight in adults (aged 18+) Persons 18+ yrs`.
 
-We'll use the `caret` package to build our ml pipeline^[[Wickham](https://r4ds.had.co.nz/model-intro.html#hypothesis-generation-vs.hypothesis-confirmation)  distinguishes between *exploratory or inferential* modelling and *confirmatory* modelling. 
+We'll use the `caret` package to build our ml pipeline^[[Wickham](https://r4ds.had.co.nz/model-intro.html#hypothesis-generation-vs.hypothesis-confirmation)  distinguishes between *exploratory or inferential* modelling and *confirmatory* modelling]. 
 
 * Each observation can either be used for exploration or confirmation, not both.
   
 * You can use an observation as many times as you like for exploration, but you can only use it once for confirmation. As soon as you use an observation twice, you’ve switched from confirmation to exploration.]  
 
-and we'll compare three algorithms - a multiple regression model, `glm`, a regularised linear model `glmnet`, a decision tree `rpart` and a random forest `ranger`. You can follow the samne principles for any other regression algorithms available in `caret`.
+and we'll compare four algorithms - a multiple regression model, `glm`, a regularised linear model `glmnet`, a decision tree `rpart` and a random forest `ranger`. You can follow the samne principles for any other regression algorithms available in `caret`.
 
 Use ??caret to see more and **we recommend** reading the [caret web pages](https://topepo.github.io/caret/index.html).
 
@@ -211,14 +213,13 @@ The approach is:
 4. Evaluating and model performance
 5. Predicting values on the test data
 6. Evaluating out-of-sample performance
-7. ...
-8. Model tuning is beyonn the scope of this exercise but most models allow tweaking (hyperparameter adjustments) and `caret` allows for grid searching to identify the best combination of hyperparameters.
+7. Model tuning is beyond the scope of this exercise but most models allow tweaking (hyperparameter adjustments) and `caret` allows for grid searching to identify the best combination of hyperparameters.
 
 ### *Exercise 7: Data splitting*
 
-There are a number of ways of doing this but we will use the `createDataPartition` function in `caret`. Generally data splits are 70% training, 30% test although you can read about alternative including training:test:validation splits. 
+There are a number of ways of doing this but we will use the `createDataPartition` function in `caret`. Generally data splits are 70% training, 30% test although you can read about alternatives including training:test:validation splits. 
 
-```{r data split}
+```{r data split, echo = TRUE}
 
 library(caret)
 
@@ -238,7 +239,7 @@ test <- complete_data[-index, ]
 
 In `caret` we can use `trainControl` to cross validate. Note that for reproducibility we need to *set a seed*.
 
-```{r}
+```{r, echo=TRUE}
  
 set.seed(42)
 
@@ -247,13 +248,15 @@ control <- trainControl(method = "repeatedcv", number = 10, repeats = 3, savePre
 
 ```
 
-## Running models 
+### *Exercise 9: Training models* 
 
 We will run each model individually to see how it works but you can run them all together using the `caretEnsemble` package - you may like to try this as a separate exercise.
 
 ### glm
 
-```{r}
+The code below shows how to train your models using a linear model. The output is stored to `model.glm`.
+
+```{r, echo=TRUE}
 
 train <- train %>% janitor::clean_names() ## rpart doesn't like variable names with spaces
 
@@ -262,10 +265,9 @@ model.glm <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = tra
 ```
 
 
-
 ### rpart
 
-`rpart` runs the *CART*() algorithm a create a decision tree. We can run it as follows:
+`rpart` runs the *CART* algorithm a create a decision tree. We can run it as follows:
 
 ```{r rpart, echo=TRUE, warning = FALSE}
 
@@ -281,7 +283,11 @@ model.rpart <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = t
 
 ### glmnet
 
-```{r glmnet, echo = TRUE}
+**Your turn - train a model using `glmnet`**
+
+#### **[HINT:](https://gist.github.com/julianflowers/71ea98a6b70bd9b92872d397e0ccde9c)**
+
+```{r glmnet, echo = FALSE}
 
 train <- train %>% janitor::clean_names() ## rpart doesn't like variable names with spaces
 
@@ -292,9 +298,9 @@ model.glmnet <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = 
 
 ```
 
-### *Exercise 9: Training using the `ranger` algorithm*  
+### *Exercise 10: Training using the `ranger` algorithm*  
 
-Your turn. Run the `ranger` algorithm
+**Your turn. Run the `ranger` algorithm**
 
 ```{r ranger, include = FALSE, results="hide"}
 
@@ -306,23 +312,36 @@ model.ranger <- train(excess_weight_in_adults_aged_18_persons_18_yrs ~., data = 
 
 ```
 
-###**Comapring model performance**
+### *Exercise 11: Comparing model performance*
 
 You can extract model performance statistics for each model using the `model.x$results` formulation. Do this for each model.
 
 * What performance measures are available?
+* Create a summary table of results for all the models
 * On the basis of the available data which appears to be the "best" model.
 
-####**[Hint]()**
+```{r, echo  = FALSE}
+glm <- model.glm$results %>% select(RMSE:MAE) %>% mutate(model = "glm")
+glmnet <- model.glmnet$results %>% select(RMSE:MAE) %>% mutate(model = "glmnet")
+rpart <- model.rpart$results %>% select(RMSE:MAE) %>% mutate(model = "rpart")
+ranger <- model.ranger$results %>% select(RMSE:MAE) %>% mutate(model = "ranger")
 
-### *Exercise 9: Using `resamples` to compare models.*
+results <- bind_rows(glm, glmnet, rpart, ranger)
+
+results
+```
+
+
+#### **[Hint](https://gist.github.com/julianflowers/d667045bee63eebb66f77a48d235b1c6)**
+
+### *Exercise 12: Using `resamples` to compare models.*
 
 
 The `resamples` function is very useful for comparing model performance and the output can be readily visualised.
 
 **Use `resamples` to compare your models and `dotplot` to visualise. What do you discover?**
 
-####**[Hint](https://gist.github.com/julianflowers/ef0dca0d17e6a25846e1c68bd91bcbd7)**
+#### **[Hint](https://gist.github.com/julianflowers/ef0dca0d17e6a25846e1c68bd91bcbd7)**
 
 ```{r resamples, include=FALSE, results="hide"}
 
@@ -337,10 +356,10 @@ dotplot(resamples)
 
 ### Making predictions on test data
 
-To do this we will use the best model from the exercise above. This is achieved using the `predict` function. This takes the form `predict(model, newdata)`
+To do this we will use the best model from the exercise above. This is achieved using the `predict` function. This takes the form `predict(model, newdata)`. Run the prediction.
 
 
-```{r prediction}
+```{r prediction, results = "hide"}
 
 test <- test %>%
   janitor::clean_names()
@@ -350,11 +369,15 @@ pred_test <- predict(model.glmnet, newdata = test)
 
 ```
 
-### *Exercise 10: calculate the accuracy of your prediction on the test data and visualise the comparison between your prediction and the observed data*
+#### **[Hint](https://gist.github.com/julianflowers/8e79b61032cd2da03a971bff84544ef1)**
 
-#### Accuracy
 
-```{r test_rmse}
+
+### *Exercise 13: calculate the accuracy of your prediction on the test data and visualise the comparison between your prediction and the observed data*
+
+
+
+```{r test_rmse, results="hide"}
 
 rmse <- sqrt(mean((pred_test - test$excess_weight_in_adults_aged_18_persons_18_yrs)^2))
 
@@ -363,9 +386,13 @@ rmse
 
 ```
 
-#### Plot
+#### **[Hint](https://gist.github.com/julianflowers/4cdb502dcd7d769c7ad83ab016dae59f)**
 
-```{r vis}
+* How does the accuracy of your model on test data compare to training data?
+
+* Visualise your predictions on the test data against the actual values
+
+```{r vis, results="hide"}
 plot_data <- data.frame(prediction = pred_test, observed = test$excess_weight_in_adults_aged_18_persons_18_yrs)
 
 ggplot(aes(prediction, observed), data = plot_data) +
@@ -382,46 +409,26 @@ ggplot(aes(prediction, observed), data = plot_data) +
 
 We have seen that we can predict excess weight in adults with reasonable accuracy (you might disagree!) but can we understand what the best predictors are in our model? 
 
-One approach to this is to extract the *variable importance* using the `varImp` function.
+One approach to this is to extract the *variable importance* using the `varImp` function. Plot variable importance for your model and the glm model - what do you notice?
 
-### *Exercise 11: Extract and plot variable importance for your model and the rpart model. What do you notice*
+### *Exercise 14: Extract and plot variable importance for your model and the glm model.*
 
-####**[Hint]()**
+* What do you notice?
 
-```{r vimp, include=FALSE, results="hide"}
 
-varImp <- varImp(model.glm)
+
+```{r vimp, fig.height=8, include=FALSE, results="hide"}
+
+varImp <- varImp(model.glmnet)
 plot(varImp)
 
 ```
 
+#### **[Hint](https://gist.github.com/julianflowers/a5f636f6cc96cd537e380ab518b6a5dc)**
 
 
-### Supplementary exercises
+## Other things to try
 
-Population segmentation is growing in importance for precision public health, population health management, and targetted prevention. It is nothing new  - there are existing area classifications and segmentation tools like Acorn and Experian. These tend to be driven by sociodemographic variables, but there is interest in "data-driven" segmentation. With rising popularity of R we have access to a range of clustering tools for segmentation (clustering is usually classified as unsupervised machine learning) - sone well know like `kmeans`, some less well known like `self-organising maps`.
-
-In this exercise we will use self-organising maps (availabe throuth the `kohonen` package) to segment our populations. SOMs are based on a neural network - more information is available [here]() and [here](). 
-
-
-
-```{r}
-
-install.packages("kohonen")
-
-library(kohonen)
-
-d <- as.matrix(scale(train))
-
-som <- som(as.matrix(scale(train)), grid = somgrid(xdim = 2, ydim = 5, "rectangular"))
-
-summary(som)
-
-plot(som, type = "counts")
-som.hc <- cutree(hclust(object.distances(som, "codes")), 5)
-
-plot(som.hc)
-add.cluster.boundaries(som, som.hc)
-
-```
+1. The rpart model has a tree output. Try plotting a decision tree based on the model (you might need `rpart.plot`, `party` and `partykit` packages to make a nice plot). What might be the advantage of using a tree output?
+2. Try other algorithms such as SVM, bayesian neural networks (`brnn`) - do they improve accuracy?
 
